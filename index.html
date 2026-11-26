@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>숲속 포커 친구들</title>
+<style>
+  :root {
+    --bg: #0f2419;
+    --panel: #173827;
+    --panel-2: #1f4733;
+    --line: #2f5e45;
+    --text: #f3efe2;
+    --muted: #a9c2b2;
+    --gold: #f6c85f;
+    --fox: #f08a4b;
+    --good: #7bd389;
+    --bad: #ef6f6c;
+    --card: #fffaf0;
+    --hub: #f3e6c4;
+    --s0: #2b2d42; --s1: #d64545; --s2: #e07a1f; --s3: #2f7d4a;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    background: radial-gradient(ellipse at 50% 0%, #1d4a33 0%, var(--bg) 60%) fixed;
+    color: var(--text);
+    font-family: "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    display: flex; justify-content: center;
+    user-select: none;
+  }
+  #app { width: 100%; max-width: 440px; padding: 10px 10px 16px; display: flex; flex-direction: column; gap: 8px; }
+  button { font: inherit; color: inherit; cursor: pointer; border: none; background: none; }
+
+  /* 상단 */
+  .top { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px; }
+  .coins { font-weight: 800; color: var(--gold); background: #0d1f16; padding: 3px 10px; border-radius: 999px; }
+  .lvl { flex: 1; text-align: center; font-weight: 800; letter-spacing: .5px; }
+  .diff { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-left: 6px; vertical-align: middle; }
+  .diff.easy { background: #24563a; color: var(--good); }
+  .diff.mid { background: #5a4a1d; color: var(--gold); }
+  .diff.hard { background: #5a2525; color: #ffb3b0; }
+  .icon-btn { width: 32px; height: 32px; border-radius: 10px; background: var(--panel-2); font-size: 16px; }
+  .icon-btn:hover { background: var(--line); }
+
+  .stats { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px 10px; }
+  .bar { height: 8px; background: #0d1f16; border-radius: 99px; overflow: hidden; margin-bottom: 8px; }
+  .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--good), var(--gold)); border-radius: 99px; transition: width .4s; }
+  .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; }
+  .stat-row div + div { border-left: 1px solid var(--line); }
+  .stat-row small { display: block; font-size: 11px; color: var(--muted); font-weight: 700; }
+  .stat-row b { font-size: 22px; font-variant-numeric: tabular-nums; }
+  .stat-row .mult { color: var(--good); }
+  .stat-row .target { color: var(--gold); }
+  .stat-row .low { color: var(--bad); }
+
+  /* 보드 */
+  .board {
+    position: relative;
+    display: grid; grid-template-columns: repeat(6, minmax(0, 58px)); grid-template-rows: repeat(6, auto); justify-content: center;
+    gap: 5px; padding: 8px; border-radius: 18px;
+    background:
+      linear-gradient(135deg, rgba(240,138,75,.10), transparent 45%),
+      linear-gradient(315deg, rgba(123,211,137,.10), transparent 45%),
+      #12301f;
+    border: 1px solid var(--line);
+  }
+  .corner { display: flex; align-items: center; justify-content: center; font-size: 22px; opacity: .55; }
+  .slot {
+    aspect-ratio: 5 / 7; border-radius: 9px; position: relative;
+    background: rgba(255,255,255,.05); border: 2px dashed rgba(255,255,255,.12);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    transition: transform .12s, box-shadow .12s;
+  }
+  .slot:hover { transform: translateY(-2px); box-shadow: 0 0 0 2px rgba(246,200,95,.6); }
+  .slot.paying { box-shadow: 0 0 0 2px var(--good), 0 0 10px rgba(123,211,137,.45); }
+  .slot.sel, .mini.sel { box-shadow: 0 0 0 3px var(--gold), 0 0 16px rgba(246,200,95,.7) !important; transform: translateY(-3px); }
+  .hint { animation: hintPulse .8s ease-in-out infinite; }
+  @keyframes hintPulse { 50% { box-shadow: 0 0 0 4px var(--gold), 0 0 18px var(--gold); transform: scale(1.06); } }
+
+  .card {
+    width: 100%; height: 100%; border-radius: 8px; background: var(--card);
+    box-shadow: 0 2px 0 rgba(0,0,0,.25);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-weight: 900; line-height: 1; position: relative;
+  }
+  .card .r { font-size: clamp(16px, 5vw, 22px); }
+  .card .s { font-size: clamp(14px, 4.4vw, 19px); margin-top: 2px; }
+  .card.s0 { color: var(--s0); } .card.s1 { color: var(--s1); } .card.s2 { color: var(--s2); } .card.s3 { color: var(--s3); }
+  .card.pop { animation: pop .35s ease-out; }
+  @keyframes pop { 0% { transform: scale(.4) rotate(-10deg); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+
+  .locked {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    border-radius: 10px; background: rgba(0,0,0,.25); border: 2px dashed rgba(255,255,255,.12);
+    color: var(--muted); font-size: 12px; font-weight: 700; text-align: center; padding: 10px 6px;
+  }
+  .locked .a { font-size: 26px; filter: grayscale(1); opacity: .6; }
+
+  /* 가운데: 고정 카드 4장 + 뽑은 카드 */
+  .center {
+    grid-column: 2 / 6; grid-row: 2 / 6;
+    background: rgba(0,0,0,.22); border-radius: 14px; border: 1px solid var(--line);
+    display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr;
+    padding: 6px; gap: 4px; position: relative;
+  }
+  .hubcell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; }
+  .hubcell.W { grid-column: 1; grid-row: 2; align-items: flex-start; }
+  .hubcell.E { grid-column: 3; grid-row: 2; align-items: flex-end; }
+  .hubcell.N { grid-column: 2; grid-row: 1; }
+  .hubcell.S { grid-column: 2; grid-row: 3; }
+  .hubcard { width: 52px; max-width: 100%; aspect-ratio: 5/7; position: relative; }
+  .hubcard .card { background: var(--hub); box-shadow: 0 0 0 2px rgba(246,200,95,.45), 0 2px 0 rgba(0,0,0,.3); }
+  .hubcard .pin { position: absolute; top: -7px; right: -5px; font-size: 13px; }
+  .hubcard.off { border-radius: 8px; border: 2px dashed rgba(255,255,255,.12); display: flex; align-items: center; justify-content: center; font-size: 18px; opacity: .5; }
+  .hlabel { font-size: 10.5px; font-weight: 700; white-space: nowrap; color: var(--muted); display: flex; align-items: center; gap: 3px; max-width: 100%; }
+  .hlabel .a { font-size: 15px; display: inline-block; }
+  .hlabel.on { color: var(--good); }
+  .hubcell.W .hlabel, .hubcell.E .hlabel { flex-direction: column; gap: 0; text-align: center; white-space: normal; line-height: 1.15; }
+  .heldcell { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+  .heldcard { width: 58px; max-width: 100%; aspect-ratio: 5/7; border-radius: 10px; }
+  .heldcard.empty { border: 2px dashed rgba(255,255,255,.18); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 10.5px; color: var(--muted); font-weight: 700; padding: 4px; cursor: pointer; }
+  .heldcard.full { box-shadow: 0 0 0 3px var(--gold), 0 0 16px rgba(246,200,95,.6); }
+  .heldtag { font-size: 10px; color: var(--gold); font-weight: 800; }
+  .cheer { animation: cheer .7s ease-out; }
+  @keyframes cheer { 0%,100% { transform: translateY(0) rotate(0); } 25% { transform: translateY(-8px) rotate(-12deg) scale(1.3); } 60% { transform: translateY(-3px) rotate(10deg) scale(1.15); } }
+
+  .floater { position: absolute; pointer-events: none; font-weight: 900; color: var(--gold); text-shadow: 0 2px 0 rgba(0,0,0,.5); font-size: 15px; animation: floatUp 1.4s ease-out forwards; white-space: nowrap; z-index: 5; transform: translateX(-50%); }
+  @keyframes floatUp { 0% { opacity: 0; margin-top: 0; } 15% { opacity: 1; } 100% { opacity: 0; margin-top: -46px; } }
+
+  /* 하단 */
+  .tray { display: grid; grid-template-columns: auto auto 1fr auto; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px; align-items: end; }
+  .tray small { display: block; font-size: 10px; color: var(--muted); font-weight: 800; margin-bottom: 4px; letter-spacing: .4px; }
+  .mini-row { display: flex; gap: 5px; }
+  .mini { width: 40px; aspect-ratio: 5/7; border-radius: 7px; background: rgba(255,255,255,.05); border: 2px dashed rgba(255,255,255,.15); display: flex; align-items: center; justify-content: center; color: var(--muted); cursor: pointer; transition: transform .12s; }
+  .mini .card .r { font-size: 15px; } .mini .card .s { font-size: 13px; }
+  .mini.preview { cursor: default; border-style: solid; border-color: transparent; background: none; }
+  .mini.preview.first .card { box-shadow: 0 0 0 2px rgba(246,200,95,.5); }
+  .actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .act { display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--panel-2); border-radius: 10px; padding: 6px 9px; font-size: 11px; font-weight: 800; min-width: 56px; }
+  .act:hover { background: var(--line); }
+  .act .e { font-size: 18px; }
+  .act .n { color: var(--gold); }
+  .act:disabled { opacity: .4; cursor: not-allowed; }
+  .act.draw { background: #2c6b47; }
+  .act.discard { background: #6b2f2c; }
+
+  .finish { background: linear-gradient(90deg, var(--gold), var(--fox)); color: #2a1a05; font-weight: 900; padding: 12px; border-radius: 14px; font-size: 16px; animation: glow 1.4s ease-in-out infinite; }
+  @keyframes glow { 50% { box-shadow: 0 0 18px rgba(246,200,95,.7); } }
+  .tip { text-align: center; font-size: 12.5px; color: var(--muted); min-height: 18px; line-height: 1.4; }
+  .tip b { color: var(--gold); }
+
+  /* 모달 */
+  .overlay { position: fixed; inset: 0; background: rgba(5,15,10,.72); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  .modal { width: 100%; max-width: 380px; background: var(--panel); border: 2px solid var(--line); border-radius: 22px; padding: 22px 20px 18px; text-align: center; animation: pop .3s ease-out; max-height: 92vh; overflow: auto; }
+  .modal .big { font-size: 50px; line-height: 1.1; }
+  .modal h2 { margin: 8px 0 6px; font-size: 23px; }
+  .modal p { color: var(--muted); margin: 6px 0; font-size: 14px; line-height: 1.55; }
+  .modal p b { color: var(--text); }
+  .modal .row { display: flex; gap: 8px; margin-top: 16px; }
+  .btn { flex: 1; padding: 12px; border-radius: 12px; font-weight: 800; font-size: 15px; background: var(--panel-2); border: 2px solid var(--line); }
+  .btn.primary { background: var(--gold); color: #2a1a05; border-color: var(--gold); }
+  .dots { display: flex; justify-content: center; gap: 6px; margin-top: 12px; }
+  .dots i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+  .dots i.on { background: var(--gold); }
+  table.hands { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+  table.hands td { padding: 5px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+  table.hands td:nth-child(2) { color: var(--muted); font-size: 12px; }
+  table.hands td:last-child { text-align: right; color: var(--gold); font-weight: 800; white-space: nowrap; }
+  .demo { display: flex; justify-content: center; align-items: center; gap: 4px; margin: 10px 0; }
+  .demo .card { width: 36px; height: 50px; }
+  .demo .card .r { font-size: 15px; } .demo .card .s { font-size: 12px; }
+  .demo .card.hubc { background: var(--hub); box-shadow: 0 0 0 2px rgba(246,200,95,.6); }
+  .demo .plus { color: var(--muted); font-weight: 900; margin: 0 2px; }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #0d1f16; border: 1px solid var(--line); padding: 10px 16px; border-radius: 12px; font-size: 14px; z-index: 60; animation: pop .25s; max-width: 90vw; text-align: center; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="modal-root"></div>
+
+<script>
+/* ================= 게임 규칙 (순수 로직) =================
+   - 날개마다 카드 4장 + 가운데 고정 카드 1장 = 5장으로 포커 족보를 만든다.
+   - 이동을 쓰는 행동: 카드 뽑기, 카드 맞바꾸기(다른 날개끼리 / 보관함 ↔ 날개).
+   - 뽑은 카드는 날개에 놓기·보관하기·버리기 모두 무료. 놓으면 원래 카드는 보관함으로 간다.
+   - 총점 = (족보가 있는 날개 점수 × 날개 보너스)의 합 × 족보가 있는 날개 수
+*/
+const SUITS = ['♠', '♥', '♦', '♣'];
+const RANK_LABEL = { 11: 'J', 12: 'Q', 13: 'K', 14: 'A' };
+const WINGS = {
+  W: { name: '서쪽', animal: '🦊', who: '여우', bonus: 1, unlock: 1 },
+  E: { name: '동쪽', animal: '🐰', who: '토끼', bonus: 1, unlock: 1 },
+  N: { name: '북쪽', animal: '🦉', who: '부엉이', bonus: 4, unlock: 5 },
+  S: { name: '남쪽', animal: '🐻', who: '곰', bonus: 9, unlock: 10 },
+};
+const WING_ORDER = ['W', 'E', 'N', 'S'];
+const HANDS = {
+  sf:       { name: '스트레이트 플러시', base: 150, ex: '같은 무늬로 5장 연속' },
+  quads:    { name: '포카드', base: 100, ex: '같은 숫자 4장' },
+  full:     { name: '풀하우스', base: 60, ex: '트리플 + 원페어' },
+  flush:    { name: '플러시', base: 45, ex: '같은 무늬 5장' },
+  straight: { name: '스트레이트', base: 40, ex: '숫자 5장 연속' },
+  trips:    { name: '트리플', base: 30, ex: '같은 숫자 3장' },
+  twopair:  { name: '투페어', base: 20, ex: '같은 숫자 2장 × 2' },
+  pair:     { name: '원페어', base: 10, ex: '같은 숫자 2장' },
+};
+const TARGETS = [200, 230, 260, 290, 900, 1100, 1250, 1350, 1450, 3800, 4400, 4800, 5000, 5200, 5400];
+const HINT_PRICE = 8;
+
+const cardPts = r => (r === 14 ? 11 : r >= 11 ? 10 : r);
+const rankLabel = r => RANK_LABEL[r] || String(r);
+const cardKey = c => c.r + '-' + c.s;
+
+function evalHand(cards) {
+  if (cards.some(c => !c)) return null;
+  const cnt = {};
+  cards.forEach(c => (cnt[c.r] = (cnt[c.r] || 0) + 1));
+  const uniq = Object.keys(cnt).map(Number).sort((a, b) => a - b);
+  const flush = cards.every(c => c.s === cards[0].s);
+  const straight = uniq.length === 5 && (uniq[4] - uniq[0] === 4 || uniq.join() === '2,3,4,5,14');
+  const all = cards.reduce((t, c) => t + cardPts(c.r), 0);
+  const v = Object.values(cnt).sort((a, b) => b - a);
+  const ranksWith = n => Object.keys(cnt).filter(k => cnt[k] === n).map(Number);
+  let key, value;
+  if (straight && flush) { key = 'sf'; value = all; }
+  else if (v[0] === 4) { key = 'quads'; value = 4 * cardPts(ranksWith(4)[0]); }
+  else if (v[0] === 3 && v[1] === 2) { key = 'full'; value = all; }
+  else if (flush) { key = 'flush'; value = all; }
+  else if (straight) { key = 'straight'; value = all; }
+  else if (v[0] === 3) { key = 'trips'; value = 3 * cardPts(ranksWith(3)[0]); }
+  else if (v[0] === 2 && v[1] === 2) { key = 'twopair'; value = ranksWith(2).reduce((t, r) => t + 2 * cardPts(r), 0); }
+  else if (v[0] === 2) { key = 'pair'; value = 2 * cardPts(ranksWith(2)[0]); }
+  else return null;
+  return { key, name: HANDS[key].name, value: HANDS[key].base + value };
+}
+
+function scoreRun(run) {
+  let sum = 0, paying = 0;
+  const per = {};
+  for (const w of Object.keys(run.board)) {
+    const h = evalHand(run.board[w].concat([run.hubs[w]]));
+    per[w] = h;
+    if (h) { sum += h.value * WINGS[w].bonus; paying++; }
+  }
+  return { total: sum * Math.max(1, paying), mult: Math.max(1, paying), paying, per };
+}
+
+const levelWings = L => WING_ORDER.filter(w => L >= WINGS[w].unlock);
+const levelMoves = L => Math.min(12, 6 + Math.floor((L - 1) / 3));
+const levelTarget = L => (L <= TARGETS.length ? TARGETS[L - 1] : TARGETS[TARGETS.length - 1] + 200 * (L - TARGETS.length));
+const levelDiff = L => (L <= 4 ? ['쉬움', 'easy'] : L <= 9 ? ['보통', 'mid'] : ['어려움', 'hard']);
+
+function shuffle(a) {
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function fullDeck() {
+  const d = [];
+  for (let r = 2; r <= 14; r++) for (let s = 0; s < 4; s++) d.push({ r, s });
+  return d;
+}
+
+function newRun(L) {
+  const deck = shuffle(fullDeck());
+  const board = {}, hubs = {};
+  levelWings(L).forEach(w => {
+    board[w] = [deck.pop(), deck.pop(), deck.pop(), deck.pop()];
+    hubs[w] = deck.pop();
+  });
+  return { level: L, deck, board, hubs, pocket: [null, null], held: null, movesLeft: levelMoves(L), target: levelTarget(L), ended: false };
+}
+
+function refillDeck(run) {
+  if (run.deck.length >= 3) return;
+  const used = new Set();
+  Object.values(run.board).flat().forEach(c => used.add(cardKey(c)));
+  Object.values(run.hubs).forEach(c => used.add(cardKey(c)));
+  run.pocket.forEach(c => c && used.add(cardKey(c)));
+  if (run.held) used.add(cardKey(run.held));
+  run.deck.forEach(c => used.add(cardKey(c)));
+  run.deck = shuffle(fullDeck().filter(c => !used.has(cardKey(c)))).concat(run.deck);
+}
+const nextCards = run => { refillDeck(run); return [run.deck[run.deck.length - 1], run.deck[run.deck.length - 2]]; };
+
+/* 힌트: 지금 할 수 있는 가장 좋은 행동 하나 */
+function bestAction(run) {
+  const base = scoreRun(run).total;
+  const wings = Object.keys(run.board);
+  const slots = [];
+  wings.forEach(w => [0, 1, 2, 3].forEach(i => slots.push([w, i])));
+  const tryTotal = fn => { const undo = fn(); const t = scoreRun(run).total; undo(); return t; };
+
+  if (run.held) {
+    let best = { kind: 'pocket-held', total: base };
+    for (const [w, i] of slots) {
+      const t = tryTotal(() => { const o = run.board[w][i]; run.board[w][i] = run.held; return () => (run.board[w][i] = o); });
+      if (t > best.total) best = { kind: 'place', w, i, total: t };
+    }
+    if (best.kind === 'pocket-held' && !run.pocket.some(c => !c)) best = { kind: 'discard', total: base };
+    return { ...best, gain: best.total - base };
+  }
+
+  let best = null;
+  for (let a = 0; a < slots.length; a++) {
+    for (let b = a + 1; b < slots.length; b++) {
+      const [w1, i1] = slots[a], [w2, i2] = slots[b];
+      if (w1 === w2) continue;
+      const t = tryTotal(() => { swapCards(run, slots[a], slots[b]); return () => swapCards(run, slots[a], slots[b]); });
+      if (!best || t > best.total) best = { kind: 'swap', a: slots[a], b: slots[b], total: t };
+    }
+  }
+  run.pocket.forEach((c, p) => {
+    if (!c) return;
+    for (const [w, i] of slots) {
+      const t = tryTotal(() => { const o = run.board[w][i]; run.board[w][i] = c; return () => (run.board[w][i] = o); });
+      if (!best || t > best.total) best = { kind: 'pocket-swap', p, w, i, total: t };
+    }
+  });
+  if (!best || best.total <= base) return { kind: 'draw', gain: 0 };
+  return { ...best, gain: best.total - base };
+}
+function swapCards(run, [w1, i1], [w2, i2]) {
+  const t = run.board[w1][i1];
+  run.board[w1][i1] = run.board[w2][i2];
+  run.board[w2][i2] = t;
+}
+
+/* ================= 저장 ================= */
+const SAVE_KEY = 'forest-poker-pals-v2';
+let save = load();
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SAVE_KEY));
+    if (s && s.level) return s;
+  } catch (e) {}
+  return { level: 1, coins: 0, hints: 5, tutorialSeen: false, run: null };
+}
+function persist() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} }
+
+/* ================= 화면 ================= */
+let selected = null;       // { k:'slot', w, i } 또는 { k:'pocket', i }
+let hint = null;           // { slots:[id...], pocket:i, draw:bool }
+let popIds = [];           // 방금 바뀐 칸
+let cheerWings = [];
+let floaters = [];
+let tipHTML = '';
+
+const app = document.getElementById('app');
+const modalRoot = document.getElementById('modal-root');
+
+function cardHTML(c, extra = '') {
+  if (!c) return '';
+  return `<div class="card s${c.s} ${extra}"><span class="r">${rankLabel(c.r)}</span><span class="s">${SUITS[c.s]}</span></div>`;
+}
+const isSel = (k, a, b) => selected && selected.k === k && (k === 'slot' ? selected.w === a && selected.i === b : selected.i === a);
+
+function slotHTML(run, w, i, sc) {
+  const id = w + '-' + i;
+  const cls = ['slot'];
+  if (sc.per[w]) cls.push('paying');
+  if (isSel('slot', w, i)) cls.push('sel');
+  if (hint && hint.slots && hint.slots.includes(id)) cls.push('hint');
+  return `<div class="${cls.join(' ')}" data-act="slot" data-w="${w}" data-i="${i}" data-id="${id}">${cardHTML(run.board[w][i], popIds.includes(id) ? 'pop' : '')}</div>`;
+}
+
+function lockedHTML(w, style) {
+  const W = WINGS[w];
+  return `<div class="locked" style="${style}"><span class="a">${W.animal}</span><span>🔒 ${W.name} 날개 · 레벨 ${W.unlock}에 열림<br>점수 보너스 ×${W.bonus}</span></div>`;
+}
+
+function hubHTML(run, w, sc, open) {
+  const W = WINGS[w];
+  if (!open) return `<div class="hubcell ${w}"><div class="hubcard off">🔒</div><div class="hlabel"><span class="a" style="filter:grayscale(1);opacity:.5">${W.animal}</span></div></div>`;
+  const h = sc.per[w];
+  const cheer = cheerWings.includes(w) ? 'cheer' : '';
+  const label = h ? `${h.name}<br>${h.value}${W.bonus > 1 ? ' ×' + W.bonus : ''}` : '족보 없음';
+  return `<div class="hubcell ${w}" data-id="hub-${w}">
+      <div class="hubcard" title="고정 카드 (움직일 수 없음)">${cardHTML(run.hubs[w])}<span class="pin">📌</span></div>
+      <div class="hlabel ${h ? 'on' : ''}"><span class="a ${cheer}">${W.animal}</span><span>${label.replace('<br>', w === 'N' || w === 'S' ? ' ' : '<br>')}</span></div>
+    </div>`;
+}
+
+function render() {
+  const run = save.run;
+  const sc = scoreRun(run);
+  const [dname, dcls] = levelDiff(run.level);
+  const pct = Math.min(100, (sc.total / run.target) * 100);
+  const next = nextCards(run);
+  const unlocked = levelWings(run.level);
+  const isOpen = w => unlocked.includes(w);
+
+  let board = '';
+  board += `<div class="corner" style="grid-row:1;grid-column:1">🌳</div>`;
+  if (isOpen('N')) for (let i = 0; i < 4; i++) board += `<div style="grid-row:1;grid-column:${i + 2}">${slotHTML(run, 'N', i, sc)}</div>`;
+  else board += lockedHTML('N', 'grid-column:2/6;grid-row:1;');
+  board += `<div class="corner" style="grid-row:1;grid-column:6">🍄</div>`;
+  for (let i = 0; i < 4; i++) {
+    board += `<div style="grid-column:1;grid-row:${i + 2}">${slotHTML(run, 'W', i, sc)}</div>`;
+    board += `<div style="grid-column:6;grid-row:${i + 2}">${slotHTML(run, 'E', i, sc)}</div>`;
+  }
+  const held = run.held
+    ? `<div class="heldtag">뽑은 카드</div><div class="heldcard full">${cardHTML(run.held, 'pop')}</div>`
+    : `<div class="heldcard empty ${hint && hint.draw ? 'hint' : ''}" data-act="draw">아래<br>🃏 뽑기<br>버튼</div>`;
+  board += `<div class="center">
+      ${WING_ORDER.map(w => hubHTML(run, w, sc, isOpen(w))).join('')}
+      <div class="heldcell">${held}</div>
+    </div>`;
+  board += `<div class="corner" style="grid-row:6;grid-column:1">🌼</div>`;
+  if (isOpen('S')) for (let i = 0; i < 4; i++) board += `<div style="grid-row:6;grid-column:${i + 2}">${slotHTML(run, 'S', i, sc)}</div>`;
+  else board += lockedHTML('S', 'grid-column:2/6;grid-row:6;');
+  board += `<div class="corner" style="grid-row:6;grid-column:6">🌿</div>`;
+
+  const pocket = run.pocket.map((c, i) => {
+    const cls = ['mini'];
+    if (isSel('pocket', i)) cls.push('sel');
+    if (hint && hint.pocket === i) cls.push('hint');
+    return `<div class="${cls.join(' ')}" data-act="pocket" data-i="${i}">${c ? cardHTML(c) : '+'}</div>`;
+  }).join('');
+  const preview = next.map((c, j) => `<div class="mini preview ${j === 0 ? 'first' : ''}">${cardHTML(c)}</div>`).join('');
+  const canHint = save.hints > 0 || save.coins >= HINT_PRICE;
+  const cleared = sc.total >= run.target;
+  const drawBtn = run.held
+    ? `<button class="act discard" data-act="discard"><span class="e">🗑️</span>버리기<span class="n">무료</span></button>`
+    : `<button class="act draw ${hint && hint.draw ? 'hint' : ''}" data-act="draw" ${run.movesLeft > 0 ? '' : 'disabled'}><span class="e">🃏</span>뽑기<span class="n">이동 1</span></button>`;
+
+  app.innerHTML = `
+    <div class="top">
+      <span class="coins">🪙 ${save.coins}</span>
+      <span class="lvl">레벨 ${run.level}<span class="diff ${dcls}">${dname}</span></span>
+      <button class="icon-btn" data-act="restart" title="레벨 다시 시작">↺</button>
+      <button class="icon-btn" data-act="rules" title="규칙">?</button>
+    </div>
+    <div class="stats">
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <div class="stat-row">
+        <div><small>점수</small><b>${sc.total}</b></div>
+        <div><small>배율</small><b class="mult">×${sc.mult}</b></div>
+        <div><small>목표</small><b class="target">${run.target}</b></div>
+        <div><small>남은 이동</small><b class="${run.movesLeft <= 2 ? 'low' : ''}">${run.movesLeft}</b></div>
+      </div>
+    </div>
+    <div class="board" id="board">${board}</div>
+    <div class="tip">${tipHTML || defaultTip(run)}</div>
+    <div class="tray">
+      <div><small>보관함</small><div class="mini-row">${pocket}</div></div>
+      <div><small>다음 카드</small><div class="mini-row">${preview}</div></div>
+      <div></div>
+      <div class="actions">
+        <button class="act" data-act="hint" ${canHint ? '' : 'disabled'}><span class="e">💡</span>힌트<span class="n">${save.hints > 0 ? save.hints : '🪙' + HINT_PRICE}</span></button>
+        ${drawBtn}
+      </div>
+    </div>
+    ${cleared && !run.ended ? `<button class="finish" data-act="finish">🎉 목표 달성! 레벨 완료 (남은 이동 보너스 🪙+${run.movesLeft * 2})</button>` : ''}
+  `;
+
+  const boardEl = document.getElementById('board');
+  floaters.forEach(f => {
+    const el = boardEl.querySelector(`[data-id="${f.id}"]`);
+    if (!el) return;
+    const br = boardEl.getBoundingClientRect(), r = el.getBoundingClientRect();
+    const d = document.createElement('div');
+    d.className = 'floater';
+    d.textContent = f.text;
+    d.style.left = (r.left - br.left + r.width / 2) + 'px';
+    d.style.top = (r.top - br.top) + 'px';
+    boardEl.appendChild(d);
+  });
+  floaters = []; cheerWings = []; popIds = [];
+}
+
+function defaultTip(run) {
+  if (run.held) return '뽑은 카드를 <b>날개 칸</b>에 놓거나 <b>보관함</b>에 넣으세요. (무료)';
+  if (selected && selected.k === 'slot') return '바꿀 <b>다른 날개의 카드</b>나 <b>보관함 카드</b>를 누르세요. (이동 1)';
+  if (selected && selected.k === 'pocket') return '이 카드와 바꿀 <b>날개 칸</b>을 누르세요. (이동 1)';
+  if (run.movesLeft <= 0) return '이동을 모두 썼어요.';
+  return '<b>🃏 뽑기</b>로 새 카드를 받거나, 카드 두 장을 눌러 <b>맞바꾸세요</b>.';
+}
+
+/* ================= 동작 ================= */
+function toast(msg) {
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2000);
+}
+
+function commit(before, msg) {
+  const run = save.run;
+  const after = scoreRun(run);
+  for (const w of Object.keys(run.board)) {
+    const b = before.per[w], a = after.per[w];
+    if (a && (!b || a.key !== b.key)) { cheerWings.push(w); floaters.push({ id: 'hub-' + w, text: `${a.name}!` }); }
+    else if (a && b && a.value !== b.value) cheerWings.push(w);
+  }
+  const diff = after.total - before.total;
+  tipHTML = msg || '';
+  if (diff > 0) tipHTML = (msg ? msg + ' · ' : '') + `<b>+${diff}점!</b>`;
+  else if (diff < 0) tipHTML = (msg ? msg + ' · ' : '') + `${diff}점… 족보가 약해졌어요.`;
+  selected = null; hint = null;
+  persist();
+  render();
+  if (run.movesLeft <= 0 && !run.held) setTimeout(endLevel, 700);
+}
+
+function handle(e) {
+  const t = e.target.closest('[data-act]');
+  if (!t || !save.run) return;
+  const run = save.run;
+  const act = t.dataset.act;
+  if (run.ended && !['rules', 'restart'].includes(act)) return;
+  const before = scoreRun(run);
+
+  if (act === 'slot') {
+    const w = t.dataset.w, i = Number(t.dataset.i);
+    if (run.held) {
+      // 뽑은 카드 놓기 (무료) → 원래 카드는 보관함으로
+      const old = run.board[w][i];
+      run.board[w][i] = run.held;
+      run.held = null;
+      const p = run.pocket.findIndex(c => !c);
+      let msg;
+      if (p >= 0) { run.pocket[p] = old; msg = `${rankLabel(old.r)}${SUITS[old.s]}는 보관함으로`; }
+      else msg = `보관함이 꽉 차서 ${rankLabel(old.r)}${SUITS[old.s]}는 버려졌어요`;
+      popIds.push(w + '-' + i);
+      return commit(before, msg);
+    }
+    if (selected && selected.k === 'slot') {
+      if (selected.w === w && selected.i === i) { selected = null; tipHTML = ''; return render(); }
+      if (selected.w === w) { selected = { k: 'slot', w, i }; tipHTML = '같은 날개 안에서는 순서가 상관없어요. <b>다른 날개</b>의 카드를 고르세요.'; return render(); }
+      if (run.movesLeft <= 0) { toast('남은 이동이 없어요.'); return; }
+      swapCards(run, [selected.w, selected.i], [w, i]);
+      run.movesLeft--;
+      popIds.push(selected.w + '-' + selected.i, w + '-' + i);
+      return commit(before, '맞바꿨어요');
+    }
+    if (selected && selected.k === 'pocket') {
+      if (run.movesLeft <= 0) { toast('남은 이동이 없어요.'); return; }
+      const p = selected.i;
+      [run.pocket[p], run.board[w][i]] = [run.board[w][i], run.pocket[p]];
+      run.movesLeft--;
+      popIds.push(w + '-' + i);
+      return commit(before, '보관함 카드와 맞바꿨어요');
+    }
+    selected = { k: 'slot', w, i }; tipHTML = ''; return render();
+  }
+
+  if (act === 'pocket') {
+    const i = Number(t.dataset.i);
+    if (run.held) {
+      if (run.pocket[i]) { toast('그 보관함 칸은 차 있어요. 빈 칸에 넣거나 날개에 놓으세요.'); return; }
+      run.pocket[i] = run.held; run.held = null;
+      return commit(before, '보관함에 넣었어요');
+    }
+    if (selected && selected.k === 'slot') {
+      if (!run.pocket[i]) { toast('날개 칸은 비워둘 수 없어요. 카드가 있는 보관함 칸과 바꾸세요.'); return; }
+      if (run.movesLeft <= 0) { toast('남은 이동이 없어요.'); return; }
+      const { w, i: si } = selected;
+      [run.pocket[i], run.board[w][si]] = [run.board[w][si], run.pocket[i]];
+      run.movesLeft--;
+      popIds.push(w + '-' + si);
+      return commit(before, '보관함 카드와 맞바꿨어요');
+    }
+    if (!run.pocket[i]) { toast('보관함은 뽑은 카드를 넣어두는 곳이에요.'); return; }
+    selected = isSel('pocket', i) ? null : { k: 'pocket', i };
+    tipHTML = ''; return render();
+  }
+
+  if (act === 'draw') {
+    if (run.held) return;
+    if (run.movesLeft <= 0) { toast('남은 이동이 없어요.'); return; }
+    refillDeck(run);
+    run.held = run.deck.pop();
+    run.movesLeft--;
+    selected = null; hint = null; tipHTML = '';
+    persist(); return render();
+  }
+
+  if (act === 'discard') {
+    if (!run.held) return;
+    run.held = null;
+    return commit(before, '뽑은 카드를 버렸어요');
+  }
+
+  if (act === 'hint') {
+    if (save.hints > 0) save.hints--;
+    else if (save.coins >= HINT_PRICE) save.coins -= HINT_PRICE;
+    else return;
+    const m = bestAction(run);
+    hint = { slots: [] };
+    if (m.kind === 'place') { hint.slots = [m.w + '-' + m.i]; tipHTML = `💡 뽑은 카드를 반짝이는 칸에 놓으면 <b>+${m.gain}점</b>`; }
+    else if (m.kind === 'pocket-held') { hint.pocket = run.pocket.findIndex(c => !c); tipHTML = '💡 지금 카드는 <b>보관함</b>에 넣어두세요.'; }
+    else if (m.kind === 'discard') { tipHTML = '💡 이 카드는 <b>버리는</b> 게 나아요.'; }
+    else if (m.kind === 'swap') { hint.slots = [m.a.join('-'), m.b.join('-')]; tipHTML = `💡 반짝이는 두 카드를 맞바꾸면 <b>+${m.gain}점</b>`; }
+    else if (m.kind === 'pocket-swap') { hint.slots = [m.w + '-' + m.i]; hint.pocket = m.p; tipHTML = `💡 반짝이는 보관함 카드와 날개 칸을 맞바꾸면 <b>+${m.gain}점</b>`; }
+    else { hint.draw = true; tipHTML = '💡 지금은 맞바꿔도 점수가 오르지 않아요. <b>카드를 뽑으세요.</b>'; }
+    selected = null;
+    persist(); return render();
+  }
+
+  if (act === 'finish') return endLevel();
+  if (act === 'rules') return showRules();
+  if (act === 'restart') {
+    showModal(`<div class="big">↺</div><h2>레벨을 다시 시작할까요?</h2><p>지금 보드는 사라지고 새 카드로 시작해요.</p>
+      <div class="row"><button class="btn" data-m="close">취소</button><button class="btn primary" data-m="restart">다시 시작</button></div>`,
+      { restart: () => startLevel(run.level) });
+  }
+}
+app.addEventListener('click', handle);
+
+function endLevel() {
+  const run = save.run;
+  if (run.ended) return;
+  run.ended = true;
+  const sc = scoreRun(run);
+  if (sc.total >= run.target) {
+    const reward = 5 + run.movesLeft * 2 + Math.floor((sc.total - run.target) / Math.max(20, Math.round(run.target / 8)));
+    save.coins += reward;
+    save.hints += 1;
+    save.level = run.level + 1;
+    persist();
+    const animals = Object.keys(run.board).map(w => WINGS[w].animal).join(' ');
+    showModal(`<div class="big">${animals}</div><h2>레벨 ${run.level} 클리어!</h2>
+      <p>점수 <b style="color:var(--gold)">${sc.total}</b> / 목표 ${run.target}</p>
+      <p>보상 🪙 +${reward} · 💡 힌트 +1</p>
+      <div class="row"><button class="btn primary" data-m="next">다음 레벨 →</button></div>`,
+      { next: () => goNextLevel(save.level) }, true);
+  } else {
+    persist();
+    showModal(`<div class="big">🥺</div><h2>아쉬워요!</h2>
+      <p>점수 ${sc.total} / 목표 ${run.target}<br>${run.target - sc.total}점이 모자랐어요.</p>
+      <div class="row"><button class="btn primary" data-m="retry">다시 도전</button></div>`,
+      { retry: () => startLevel(run.level) }, true);
+  }
+}
+
+function goNextLevel(L) {
+  const newly = WING_ORDER.find(w => WINGS[w].unlock === L && L > 1);
+  if (newly) {
+    const W = WINGS[newly];
+    showModal(`<div class="big cheer">${W.animal}</div><h2>${W.name} 날개가 열렸어요!</h2>
+      <p>${W.who}가 친구가 되었어요.<br>${W.name} 날개의 족보 점수는 <b style="color:var(--gold)">×${W.bonus}</b>로 계산돼요.</p>
+      <div class="row"><button class="btn primary" data-m="go">좋아요!</button></div>`,
+      { go: () => startLevel(L) }, true);
+  } else startLevel(L);
+}
+
+function startLevel(L) {
+  save.level = L;
+  save.run = newRun(L);
+  selected = null; hint = null; tipHTML = '';
+  persist();
+  closeModal();
+  render();
+}
+
+/* ================= 모달 ================= */
+let modalHandlers = {};
+function showModal(html, handlers = {}, locked = false) {
+  modalHandlers = handlers;
+  modalRoot.innerHTML = `<div class="overlay" data-locked="${locked}"><div class="modal">${html}</div></div>`;
+}
+function closeModal() { modalRoot.innerHTML = ''; modalHandlers = {}; }
+modalRoot.addEventListener('click', e => {
+  const b = e.target.closest('[data-m]');
+  if (b) {
+    const k = b.dataset.m;
+    if (k === 'close') return closeModal();
+    if (modalHandlers[k]) return modalHandlers[k]();
+  }
+  const ov = e.target.classList.contains('overlay') ? e.target : null;
+  if (ov && ov.dataset.locked !== 'true') closeModal();
+});
+
+const demo = (cards, hubCard) => `<div class="demo">${cards.map(([r, s]) => cardHTML({ r, s })).join('')}${hubCard ? `<span class="plus">+</span>${cardHTML({ r: hubCard[0], s: hubCard[1] }, 'hubc')}` : ''}</div>`;
+const TUTORIAL = [
+  () => `<div class="big">🦊🐰</div><h2>숲속 포커 친구들</h2>
+    <p>날개마다 <b>카드 4장</b>과 가운데 <b>📌 고정 카드 1장</b>이 있어요.<br>이 <b>5장</b>으로 포커 족보를 만들면 점수!</p>
+    ${demo([[9, 0], [9, 1], [4, 3], [12, 2]], [9, 3])}
+    <p>9가 세 장 → <b>트리플</b>! 고정 카드는 움직일 수 없어요.</p>`,
+  () => `<div class="big">🃏</div><h2>뽑기 (이동 1)</h2>
+    <p><b>🃏 뽑기</b>를 누르면 카드가 한 장 나와요.<br>뽑은 카드는 <b>무료</b>로 처리해요.</p>
+    <p>• 날개 칸에 놓기 → 원래 카드는 <b>보관함</b>으로<br>• 보관함에 넣기<br>• 버리기</p>`,
+  () => `<div class="big">🔄</div><h2>맞바꾸기 (이동 1)</h2>
+    <p>카드 하나를 누르고, <b>다른 날개</b>의 카드를 누르면 두 카드가 자리를 바꿔요.</p>
+    <p>보관함 카드를 누르고 날개 칸을 눌러도 맞바꿀 수 있어요.</p>`,
+  () => `<div class="big">✖️</div><h2>날개가 많을수록 배율 UP</h2>
+    <p>족보가 있는 날개 하나마다 <b>배율이 1씩</b> 올라요.<br>🦊과 🐰 둘 다 족보가 있으면 ×2!</p>
+    <p>레벨 5에 북쪽 🦉(점수 ×4), 레벨 10에 남쪽 🐻(점수 ×9) 날개가 열려요.</p>`,
+  () => `<div class="big">🎯</div><h2>목표 점수를 넘기세요</h2>
+    <p>남은 이동 안에 <b>목표 점수</b>를 넘기면 레벨 클리어!<br>일찍 끝내면 남은 이동만큼 🪙 보너스.</p>
+    <p><b>다음 카드</b> 2장을 보고 계획을 세우고,<br>막히면 💡 힌트를 쓰세요.</p>`,
+];
+function showTutorial(i = 0) {
+  const last = i === TUTORIAL.length - 1;
+  showModal(`${TUTORIAL[i]()}
+    <div class="dots">${TUTORIAL.map((_, j) => `<i class="${j === i ? 'on' : ''}"></i>`).join('')}</div>
+    <div class="row">
+      ${i > 0 ? '<button class="btn" data-m="prev">이전</button>' : '<button class="btn" data-m="skip">건너뛰기</button>'}
+      <button class="btn primary" data-m="next">${last ? '시작하기' : '다음'}</button>
+    </div>`, {
+    prev: () => showTutorial(i - 1),
+    next: () => (last ? finishTutorial() : showTutorial(i + 1)),
+    skip: finishTutorial,
+  }, true);
+}
+function finishTutorial() { save.tutorialSeen = true; persist(); closeModal(); }
+
+function showRules() {
+  const rows = Object.values(HANDS).map(h => `<tr><td>${h.name}</td><td>${h.ex}</td><td>${h.base} +</td></tr>`).join('');
+  showModal(`<h2>규칙과 족보표</h2>
+    <p style="text-align:left">• 날개 카드 4장 + 📌 고정 카드 1장 = <b>5장</b>으로 족보<br>
+    • <b>이동 1</b>: 🃏 뽑기, 카드 맞바꾸기<br>
+    • <b>무료</b>: 뽑은 카드 놓기·보관하기·버리기</p>
+    <table class="hands">${rows}</table>
+    <p style="margin-top:10px;text-align:left">족보 점수 = 기본 점수 + 족보를 이루는 카드 점수<br>
+    (2~10은 숫자 그대로, J·Q·K는 10, A는 11)<br>
+    <b>총점 = (날개 점수 × 날개 보너스)의 합 × 족보가 있는 날개 수</b></p>
+    <div class="row"><button class="btn" data-m="tut">튜토리얼 보기</button><button class="btn primary" data-m="close">닫기</button></div>`,
+    { tut: () => showTutorial(0) });
+}
+
+/* ================= 시작 ================= */
+if (!save.run || save.run.ended) {
+  save.run = newRun(save.level);
+  persist();
+}
+render();
+if (!save.tutorialSeen) showTutorial(0);
+</script>
+</body>
+</html>
