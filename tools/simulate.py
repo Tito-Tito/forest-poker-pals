@@ -2,8 +2,9 @@
 
 index.html의 족보 점수(HANDS), 날개 보너스/해금(WINGS), 이동 횟수(levelMoves)를 바꾸면
 여기 상수도 같이 바꾼 뒤 실행해서 TARGETS를 다시 정한다.
-실행: python tools/simulate.py  (레벨별 탐욕 플레이 점수의 30/50/70% 분위 출력)
-탐욕 AI는 사람보다 약간 약하므로 목표는 대략 p30~p50 근처로 잡는다.
+실행: python tools/simulate.py  (레벨별 탐욕 플레이 점수의 10/15/20/30% 분위 출력)
+탐욕 AI는 모든 맞바꾸기를 다 계산하므로 사람보다 강하다.
+목표는 AI가 약 85~90% 깨는 점수(대략 p10~p20)로 잡는다. (p30~p50으로 잡았을 때 사람에게 너무 어려웠음)
 """
 import random
 from collections import Counter
@@ -92,4 +93,4 @@ random.seed(2)
 for L in range(1, 16):
     xs = sorted(play(L) for _ in range(400))
     q = lambda p: xs[int(p * len(xs))]
-    print(L, moves(L), 'p30', q(.3), 'p50', q(.5), 'p70', q(.7))
+    print(L, moves(L), 'p10', q(.1), 'p15', q(.15), 'p20', q(.2), 'p30', q(.3))
