@@ -19,6 +19,7 @@
     --card: #fffaf0;
     --hub: #f3e6c4;
     --s0: #2b2d42; --s1: #d64545; --s2: #e07a1f; --s3: #2f7d4a;
+    --cw: 52px; /* 보드 카드 폭: 화면 크기에 맞춰 JS(fitBoard)가 정함 */
     color-scheme: dark;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -30,27 +31,27 @@
     display: flex; justify-content: center;
     user-select: none;
   }
-  #app { width: 100%; max-width: 440px; padding: 10px 10px 16px; display: flex; flex-direction: column; gap: 8px; }
+  #app { width: 100%; max-width: max(420px, calc(var(--cw) * 6 + 63px)); padding: 8px 10px 10px; display: flex; flex-direction: column; gap: 6px; }
   button { font: inherit; color: inherit; cursor: pointer; border: none; background: none; }
 
   /* 상단 */
-  .top { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px; }
+  .top { display: flex; align-items: center; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 5px 8px; }
   .coins { font-weight: 800; color: var(--gold); background: #0d1f16; padding: 3px 10px; border-radius: 999px; }
   .lvl { flex: 1; text-align: center; font-weight: 800; letter-spacing: .5px; }
   .diff { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; margin-left: 6px; vertical-align: middle; }
   .diff.easy { background: #24563a; color: var(--good); }
   .diff.mid { background: #5a4a1d; color: var(--gold); }
   .diff.hard { background: #5a2525; color: #ffb3b0; }
-  .icon-btn { width: 32px; height: 32px; border-radius: 10px; background: var(--panel-2); font-size: 16px; }
+  .icon-btn { width: 30px; height: 30px; border-radius: 10px; background: var(--panel-2); font-size: 16px; }
   .icon-btn:hover { background: var(--line); }
 
-  .stats { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px 10px; }
-  .bar { height: 8px; background: #0d1f16; border-radius: 99px; overflow: hidden; margin-bottom: 8px; }
+  .stats { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 6px 10px 6px; }
+  .bar { height: 6px; background: #0d1f16; border-radius: 99px; overflow: hidden; margin-bottom: 4px; }
   .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--good), var(--gold)); border-radius: 99px; transition: width .4s; }
   .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); text-align: center; }
   .stat-row div + div { border-left: 1px solid var(--line); }
-  .stat-row small { display: block; font-size: 11px; color: var(--muted); font-weight: 700; }
-  .stat-row b { font-size: 22px; font-variant-numeric: tabular-nums; }
+  .stat-row small { display: block; font-size: 10.5px; color: var(--muted); font-weight: 700; }
+  .stat-row b { font-size: 19px; line-height: 1.2; font-variant-numeric: tabular-nums; }
   .stat-row .mult { color: var(--good); }
   .stat-row .target { color: var(--gold); }
   .stat-row .low { color: var(--bad); }
@@ -58,7 +59,7 @@
   /* 보드 */
   .board {
     position: relative;
-    display: grid; grid-template-columns: repeat(6, minmax(0, 58px)); grid-template-rows: repeat(6, auto); justify-content: center;
+    display: grid; grid-template-columns: repeat(6, var(--cw)); grid-template-rows: repeat(6, calc(var(--cw) * 1.4)); justify-content: center;
     gap: 5px; padding: 8px; border-radius: 18px;
     background:
       linear-gradient(135deg, rgba(240,138,75,.10), transparent 45%),
@@ -66,9 +67,9 @@
       #12301f;
     border: 1px solid var(--line);
   }
-  .corner { display: flex; align-items: center; justify-content: center; font-size: 22px; opacity: .55; }
+  .corner { display: flex; align-items: center; justify-content: center; font-size: calc(var(--cw) * .4); opacity: .55; }
   .slot {
-    aspect-ratio: 5 / 7; border-radius: 9px; position: relative;
+    height: 100%; border-radius: 9px; position: relative;
     background: rgba(255,255,255,.05); border: 2px dashed rgba(255,255,255,.12);
     display: flex; align-items: center; justify-content: center; cursor: pointer;
     transition: transform .12s, box-shadow .12s;
@@ -85,8 +86,8 @@
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     font-weight: 900; line-height: 1; position: relative;
   }
-  .card .r { font-size: clamp(16px, 5vw, 22px); }
-  .card .s { font-size: clamp(14px, 4.4vw, 19px); margin-top: 2px; }
+  .card .r { font-size: calc(var(--cw) * .38); }
+  .card .s { font-size: calc(var(--cw) * .33); margin-top: 2px; }
   .card.s0 { color: var(--s0); } .card.s1 { color: var(--s1); } .card.s2 { color: var(--s2); } .card.s3 { color: var(--s3); }
   .card.pop { animation: pop .35s ease-out; }
   @keyframes pop { 0% { transform: scale(.4) rotate(-10deg); opacity: 0; } 70% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
@@ -94,23 +95,23 @@
   .locked {
     display: flex; align-items: center; justify-content: center; gap: 8px;
     border-radius: 10px; background: rgba(0,0,0,.25); border: 2px dashed rgba(255,255,255,.12);
-    color: var(--muted); font-size: 12px; font-weight: 700; text-align: center; padding: 10px 6px;
+    color: var(--muted); font-size: 12px; font-weight: 700; text-align: center; padding: 4px 6px; line-height: 1.3;
   }
-  .locked .a { font-size: 26px; filter: grayscale(1); opacity: .6; }
+  .locked .a { font-size: calc(var(--cw) * .45); filter: grayscale(1); opacity: .6; }
 
   /* 가운데: 고정 카드 4장 + 뽑은 카드 */
   .center {
     grid-column: 2 / 6; grid-row: 2 / 6;
     background: rgba(0,0,0,.22); border-radius: 14px; border: 1px solid var(--line);
     display: grid; grid-template-columns: 1fr 1fr 1fr; grid-template-rows: 1fr 1fr 1fr;
-    padding: 6px; gap: 4px; position: relative;
+    padding: 4px; gap: 2px; position: relative; min-height: 0;
   }
-  .hubcell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; }
+  .hubcell { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-width: 0; min-height: 0; }
   .hubcell.W { grid-column: 1; grid-row: 2; align-items: flex-start; }
   .hubcell.E { grid-column: 3; grid-row: 2; align-items: flex-end; }
   .hubcell.N { grid-column: 2; grid-row: 1; }
   .hubcell.S { grid-column: 2; grid-row: 3; }
-  .hubcard { width: 52px; max-width: 100%; aspect-ratio: 5/7; position: relative; }
+  .hubcard { width: calc(var(--cw) * .85); max-width: 100%; aspect-ratio: 5/7; position: relative; }
   .hubcard .card { background: var(--hub); box-shadow: 0 0 0 2px rgba(246,200,95,.45), 0 2px 0 rgba(0,0,0,.3); }
   .hubcard .pin { position: absolute; top: -7px; right: -5px; font-size: 13px; }
   .hubcard.off { border-radius: 8px; border: 2px dashed rgba(255,255,255,.12); display: flex; align-items: center; justify-content: center; font-size: 18px; opacity: .5; }
@@ -119,7 +120,7 @@
   .hlabel.on { color: var(--good); }
   .hubcell.W .hlabel, .hubcell.E .hlabel { flex-direction: column; gap: 0; text-align: center; white-space: normal; line-height: 1.15; }
   .heldcell { grid-column: 2; grid-row: 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
-  .heldcard { width: 58px; max-width: 100%; aspect-ratio: 5/7; border-radius: 10px; }
+  .heldcard { width: calc(var(--cw) * .95); max-width: 100%; aspect-ratio: 5/7; border-radius: 10px; }
   .heldcard.empty { border: 2px dashed rgba(255,255,255,.18); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 10.5px; color: var(--muted); font-weight: 700; padding: 4px; cursor: pointer; }
   .heldcard.full { box-shadow: 0 0 0 3px var(--gold), 0 0 16px rgba(246,200,95,.6); }
   .heldtag { font-size: 10px; color: var(--gold); font-weight: 800; }
@@ -130,15 +131,15 @@
   @keyframes floatUp { 0% { opacity: 0; margin-top: 0; } 15% { opacity: 1; } 100% { opacity: 0; margin-top: -46px; } }
 
   /* 하단 */
-  .tray { display: grid; grid-template-columns: auto auto 1fr auto; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 8px 10px; align-items: end; }
-  .tray small { display: block; font-size: 10px; color: var(--muted); font-weight: 800; margin-bottom: 4px; letter-spacing: .4px; }
+  .tray { display: grid; grid-template-columns: auto auto 1fr auto; gap: 8px; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 6px 8px; align-items: end; }
+  .tray small { display: block; font-size: 10px; color: var(--muted); font-weight: 800; margin-bottom: 3px; letter-spacing: .4px; }
   .mini-row { display: flex; gap: 5px; }
-  .mini { width: 40px; aspect-ratio: 5/7; border-radius: 7px; background: rgba(255,255,255,.05); border: 2px dashed rgba(255,255,255,.15); display: flex; align-items: center; justify-content: center; color: var(--muted); cursor: pointer; transition: transform .12s; }
+  .mini { width: 38px; aspect-ratio: 5/7; border-radius: 7px; background: rgba(255,255,255,.05); border: 2px dashed rgba(255,255,255,.15); display: flex; align-items: center; justify-content: center; color: var(--muted); cursor: pointer; transition: transform .12s; }
   .mini .card .r { font-size: 15px; } .mini .card .s { font-size: 13px; }
   .mini.preview { cursor: default; border-style: solid; border-color: transparent; background: none; }
   .mini.preview.first .card { box-shadow: 0 0 0 2px rgba(246,200,95,.5); }
   .actions { display: flex; gap: 6px; justify-content: flex-end; }
-  .act { display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--panel-2); border-radius: 10px; padding: 6px 9px; font-size: 11px; font-weight: 800; min-width: 56px; }
+  .act { display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--panel-2); border-radius: 10px; padding: 5px 9px; font-size: 11px; font-weight: 800; min-width: 54px; }
   .act:hover { background: var(--line); }
   .act .e { font-size: 18px; }
   .act .n { color: var(--gold); }
@@ -146,9 +147,10 @@
   .act.draw { background: #2c6b47; }
   .act.discard { background: #6b2f2c; }
 
-  .finish { background: linear-gradient(90deg, var(--gold), var(--fox)); color: #2a1a05; font-weight: 900; padding: 12px; border-radius: 14px; font-size: 16px; animation: glow 1.4s ease-in-out infinite; }
+  .finish { width: 100%; height: 100%; background: linear-gradient(90deg, var(--gold), var(--fox)); color: #2a1a05; font-weight: 900; padding: 0 8px; border-radius: 12px; font-size: 15px; animation: glow 1.4s ease-in-out infinite; }
   @keyframes glow { 50% { box-shadow: 0 0 18px rgba(246,200,95,.7); } }
-  .tip { text-align: center; font-size: 12.5px; color: var(--muted); min-height: 18px; line-height: 1.4; }
+  .tip { height: 36px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 12.5px; color: var(--muted); line-height: 1.4; overflow: hidden; }
+  .tip > span { display: block; }
   .tip b { color: var(--gold); }
 
   /* 모달 */
@@ -371,7 +373,7 @@ function slotHTML(run, w, i, sc) {
 
 function lockedHTML(w, style) {
   const W = WINGS[w];
-  return `<div class="locked" style="${style}"><span class="a">${W.animal}</span><span>🔒 ${W.name} 날개 · 레벨 ${W.unlock}에 열림<br>점수 보너스 ×${W.bonus}</span></div>`;
+  return `<div class="locked" style="${style}"><span class="a">${W.animal}</span><span>🔒 ${W.name} 날개<br>레벨 ${W.unlock}에 열림 · 보너스 ×${W.bonus}</span></div>`;
 }
 
 function hubHTML(run, w, sc, open) {
@@ -385,6 +387,20 @@ function hubHTML(run, w, sc, open) {
       <div class="hlabel ${h ? 'on' : ''}"><span class="a ${cheer}">${W.animal}</span><span>${label.replace('<br>', w === 'N' || w === 'S' ? ' ' : '<br>')}</span></div>
     </div>`;
 }
+
+// 화면(9:16 등) 높이·너비에 맞춰 보드 카드 크기를 정해 스크롤 없이 한 화면에 들어가게 한다.
+function fitBoard() {
+  const boardEl = document.getElementById('board');
+  if (!boardEl) return;
+  const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  const other = app.getBoundingClientRect().height - boardEl.getBoundingClientRect().height;
+  const frame = 16 + 2 + 25; // 보드 안쪽 여백 + 테두리 + 칸 사이 간격 5개
+  const byH = (vh - other - frame) / (6 * 1.4);
+  const byW = (Math.min(window.innerWidth, 800) - 20 - frame) / 6;
+  const cw = Math.max(30, Math.min(110, byH, byW));
+  document.documentElement.style.setProperty('--cw', cw.toFixed(1) + 'px');
+}
+window.addEventListener('resize', () => { if (save.run) fitBoard(); });
 
 function render() {
   const run = save.run;
@@ -446,7 +462,9 @@ function render() {
       </div>
     </div>
     <div class="board" id="board">${board}</div>
-    <div class="tip">${tipHTML || defaultTip(run)}</div>
+    <div class="tip">${cleared && !run.ended
+      ? `<button class="finish" data-act="finish">🎉 목표 달성! 레벨 완료 (보너스 🪙+${run.movesLeft * 2})</button>`
+      : `<span>${tipHTML || defaultTip(run)}</span>`}</div>
     <div class="tray">
       <div><small>보관함</small><div class="mini-row">${pocket}</div></div>
       <div><small>다음 카드</small><div class="mini-row">${preview}</div></div>
@@ -456,8 +474,8 @@ function render() {
         ${drawBtn}
       </div>
     </div>
-    ${cleared && !run.ended ? `<button class="finish" data-act="finish">🎉 목표 달성! 레벨 완료 (남은 이동 보너스 🪙+${run.movesLeft * 2})</button>` : ''}
   `;
+  fitBoard();
 
   const boardEl = document.getElementById('board');
   floaters.forEach(f => {
